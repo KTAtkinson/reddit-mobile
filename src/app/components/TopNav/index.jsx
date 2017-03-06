@@ -84,6 +84,7 @@ export const TopNav = props => {
           <span className='icon icon-search icon-large' />
         </div>
         <div
+          id="sitenav"
           className='MobileButton TopNav-floaty'
           onClick={ toggleSettingsMenu }
         >
