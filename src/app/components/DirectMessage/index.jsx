@@ -21,6 +21,8 @@ export function DirectMessage(props) {
           onSubmit={ props.onFormSubmit }
           username={ props.user.name }
           recipient={ props.recipient }
+          subject={ props.subject }
+          message={ props.message }
         />
       </div>
     </div>
@@ -30,10 +32,14 @@ export function DirectMessage(props) {
 DirectMessage.propTypes = {
   user: T.object.isRequired,
   recipient: T.string,
+  subject: T.string,
+  message: T.string,
 };
 
 DirectMessage.defaultProps = {
   recipient: '',
+  subject: '',
+  message: '',
 };
 
 const selector = createSelector(
@@ -49,6 +55,8 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => ({
   ...stateProps,
   ...dispatchProps,
   recipient: ownProps.queryParams.to,
+  subject: ownProps.queryParams.subject,
+  message: ownProps.queryParams.message,
 });
 
 export default connect(selector, mapDispatchToProps, mergeProps)(DirectMessage);

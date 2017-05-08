@@ -8,11 +8,11 @@ import { urlWith } from 'lib/urlWith';
 import OverlayMenu from 'app/components/OverlayMenu';
 import { LinkRow, ButtonRow, ExpandoRow } from 'app/components/OverlayMenu/OverlayMenuRow';
 import menuItems from './SettingsOverlayMenuItems';
-import { themes } from 'app/constants';
+import { COLOR_SCHEME } from 'app/constants';
 import { userAccountSelector } from 'app/selectors/userAccount';
 import config from 'config';
 
-const { NIGHTMODE } = themes;
+const { NIGHTMODE } = COLOR_SCHEME;
 
 const DESKTOP_TRACKING_PARAMS = {
   utm_source: 'mweb_navbar',

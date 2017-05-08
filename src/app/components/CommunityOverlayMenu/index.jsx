@@ -31,15 +31,17 @@ const renderSubscriptions = (subscriptions, loading, theme) => (
     text='Subscribed'
     subtext={ numCommunitiesText(subscriptions, loading) }
   >
-    { map(subscriptions, subreddit => (
+    { map(subscriptions, subreddit => {
+      const [ subType, subName ] = subreddit.displayNamePrefixed.split('/');
+      return (
         <LinkRow
           key={ `OverlayMenu-row-subscription-${subreddit.url}` }
           href={ subreddit.url }
           icon='OverlayMenu-icon-following-snoo'
           text={ (
             <span>
-              <span className='CommunityRow__rSlash'>r/</span>
-              { subreddit.displayName }
+              <span className='CommunityRow__rSlash'>{ subType }/</span>
+              { subName }
               { subreddit.over18 ? NSFWFlair : null }
             </span>
           ) }
@@ -47,7 +49,8 @@ const renderSubscriptions = (subscriptions, loading, theme) => (
           iconBackgroundColor={ subreddit.keyColor || '' }
           theme={ theme }
         />
-      )) }
+      );
+    }) }
   </ExpandoRow>
 );
 
@@ -57,27 +60,43 @@ export const CommunityOverlayMenu = (props) => {
   return (
     <OverlayMenu>
       <CommunitySearchRow />
-      <LinkRow
-        key='front-page-row'
-        text='Front Page'
-        href='/'
-        icon='icon-snoo-circled icon-xl orangered'
-      />
       { !user.loggedOut
-        ? <LinkRow
-          key='popular-link'
-          text='Popular'
-          href='/r/popular'
-          icon='icon-rising mint-circled-xl'
-          />
-        : ''
+        ? React.Children.toArray([
+          <LinkRow
+            key='front-page-row'
+            text='Home'
+            href='/'
+            icon='icon-snoo-circled icon-xl orangered'
+          />,
+          <LinkRow
+            key='popular-link'
+            text='Popular'
+            href='/r/popular'
+            icon='icon-rising mint-circled-xl'
+          />,
+          <LinkRow
+            key='all-link'
+            text='All'
+            href='/r/all'
+            icon='icon-bar-chart orangered-circled-xl'
+          />,
+        ])
+        : React.Children.toArray([
+          <LinkRow
+            key='popular-link'
+            text='Popular'
+            href='/'
+            icon='icon-rising mint-circled-xl'
+          />,
+          <LinkRow
+            key='all-link'
+            text='All'
+            href='/r/all'
+            icon='icon-bar-chart orangered-circled-xl'
+          />,
+        ])
       }
-      <LinkRow
-        key='all-link'
-        text='All'
-        href='/r/all'
-        icon='icon-bar-chart orangered-circled-xl'
-      />
+
       { renderSubscriptions(subscriptions, subscriptionsLoading, theme) }
     </OverlayMenu>
   );

@@ -92,6 +92,24 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
   const sort = urlParams.sort || queryParams.sort || SORTS.HOT;
   const time = ownProps.time || listingTime(queryParams, sort);
   const { navigateToUrl } = dispatchProps;
+  const { userName, commentsOrSubmitted } = urlParams;
+
+  let onSortChange;
+
+  if (userName) {
+    onSortChange = sort => {
+      const path = commentsOrSubmitted || '';
+      navigateToUrl(`/user/${userName}/${path}`, {
+        queryParams: { ...queryParams, sort },
+      });
+    };
+  } else {
+    onSortChange = sort => {
+      const { subredditName } = urlParams;
+      const baseUrl = subredditName ? `/r/${subredditName}` : '';
+      navigateToUrl(`${baseUrl}/${sort}`);
+    };
+  }
 
   return {
     time,
@@ -99,11 +117,7 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
     ...ownProps,
     ...stateProps,
     onTimeChange: time => navigateToUrl(url, { queryParams: { ...queryParams, t: time } }),
-    onSortChange: sort => {
-      const { subredditName } = urlParams;
-      const baseUrl = subredditName ? `/r/${subredditName}` : '';
-      navigateToUrl(`${baseUrl}/${sort}`);
-    },
+    onSortChange,
   };
 };
 

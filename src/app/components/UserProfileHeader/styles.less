@@ -1,13 +1,28 @@
 @import (reference) '~app/less/variables';
 @import (reference) '~app/less/themes/themeify';
 
+@user-profile-header-follow-button-size: 19px;
+
 .UserProfileHeader {
   &__banner {
-    padding: 2 * @grid-size @grid-size;
+    padding: @grid-size;
     text-align: center;
   }
 
   &__banner-user-name {
+    display: inline-block;
+    padding-left: @grid-size;
+    padding-right: @grid-size;
+    font-weight: lighter;
+    vertical-align: middle;
+    margin: 0; // have to override the text reset here. Those are everywhere by default, probably mostly for ugc, maybe we should just wrap those in class
+  }
+
+  &__banner-karma {
+    display: block;
+    padding-top: @grid-size / 2;
+    padding-left: @grid-size;
+    padding-right: @grid-size;
     font-weight: lighter;
     vertical-align: middle;
     margin: 0; // have to override the text reset here. Those are everywhere by default, probably mostly for ugc, maybe we should just wrap those in class
@@ -34,19 +49,8 @@
     }
   }
 
-  &__tab-icon {
-    // this is just a little bit smaller than icon-large
-    font-size: 20px;
-    line-height: 20px;
-    margin-bottom: @half-grid-size;
-
-    &.selected {
-      color: @mint;
-    }
-  }
-
   &__tab-text {
-    font-size: @font-size-small;
+    font-size: @font-size-base;
     font-weight: bold;
 
     .themeify({
@@ -56,5 +60,40 @@
     &.selected {
       color: @dark-teal;
     }
+  }
+
+  &__verified {
+    display: inline-block;
+    vertical-align: middle;
+    width: 0;
+  }
+
+  &__follow,
+  &__follower {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    width: 120px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 1px solid @blue;
+    border-radius: 5px;
+    text-align: center;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 15px;
+    letter-spacing: 1px;
+  }
+
+  &__follow {
+    border-color: @blue;
+    background: @blue;
+    color: @white;
+  }
+
+  &__follower {
+    border-color: @teal;
+    color: @teal;
   }
 }

@@ -16,6 +16,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  // ensure that the content scrolls if there's overflow.
+  // this ensures things like landscape mode work
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
 }
 
 // You can set an explicit height on your modal if desired,

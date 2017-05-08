@@ -1,6 +1,11 @@
 export default function getSubreddit(state) {
+
   if (state.platform.currentPage.urlParams.subredditName) {
     return state.platform.currentPage.urlParams.subredditName;
+  }
+
+  if (!state.platform.currentPage.urlParams.postId) {
+    return null;
   }
 
   const current = state.commentsPages.data.current;

@@ -4,16 +4,16 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 
-import { themes } from 'app/constants';
+import { COLOR_SCHEME } from 'app/constants';
 import { formatNumber } from 'lib/formatNumber';
 
 import Loading from 'app/components/Loading';
 import SubredditSubscribeForm from 'app/components/SubredditSubscribeForm';
 
-const { NIGHTMODE } = themes;
+const { NIGHTMODE } = COLOR_SCHEME;
 const UTF8Circle = '●';
 
-const renderErrorMessage = (error) => {
+const renderErrorMessage = error => {
   if (!error) {
     return false;
   }
@@ -67,22 +67,19 @@ const renderBannerRow = (subreddit, theme) => {
   );
 };
 
-const followIconClass = (subscriber) => {
-  return subscriber ? 'icon-check-circled lime' : 'icon-follow blue';
+const renderSubscribeButton = subscriber => {
+  const subscribeClass = subscriber ? 'subscriber' : 'subscribe';
+  return (
+    <button
+      type='submit'
+      className={ `CommunityHeader-${subscribeClass}-button` }
+    >
+      { ` ${subscriber ? 'Subscribed' : 'Subscribe'} ` }
+    </button>
+  );
 };
 
-const renderSubscribeButton = (subscriber) => (
-  <button type='submit' className='CommunityHeader-text-row-blue CommunityHeader-no-outline'>
-    { ` ${subscriber ? 'Subscribed' : 'Subscribe'} ` }
-    <span className='CommunityHeader-subscribe-button' >
-      <span
-        className={ `CommunityHeader-subscribe-icon icon ${followIconClass(subscriber)}` }
-      />
-    </span>
-  </button>
-);
-
-const CommunityHeader = (props) => {
+const CommunityHeader = props => {
   const {
     subreddit,
     subredditRequest,
@@ -90,12 +87,11 @@ const CommunityHeader = (props) => {
     theme,
   } = props;
 
-
   if (!subreddit) {
     if (subredditRequest && subredditRequest.failed) {
       return null;
     }
-    
+
     return <Loading />;
   }
 
@@ -112,13 +108,12 @@ const CommunityHeader = (props) => {
       { banner }
       <div className='CommunityHeader-text-row'>
         <h4 className='CommunityHeader-community-title'>
-          { subreddit.displayName }
+          { subreddit.displayNamePrefixed }
         </h4>
       </div>
       <div className='CommunityHeader-text-row'>
         <span>{ `${formatNumber(subreddit.subscribers)} subscribers` }</span>
-      { onlineCount }
-        { ` ${UTF8Circle}` }
+        { onlineCount }
         <SubredditSubscribeForm
           subredditName={ subreddit.uuid }
           className='CommunityHeader-subscribe-form CommunityHeader-no-outline'

@@ -14,25 +14,41 @@ const GILD_URL_RE = /u\/.*\/gild$/;
 
 const mapStateToProps = createSelector(
   userAccountSelector,
-  (state, props) => state.accounts[props.urlParams.userName],
+  (state, props) => state.accounts[props.urlParams.userName.toLowerCase()],
   (state, props) => state.accountRequests[props.urlParams.userName],
-  (myUser, queriedUser, queriedUserRequest) => ({ myUser, queriedUser, queriedUserRequest }),
+  (myUser, queriedUser, queriedUserRequest) => {
+    const isVerified = queriedUser && queriedUser.verified;
+    return {
+      myUser,
+      queriedUser: queriedUser || {},
+      queriedUserRequest,
+      isVerified,
+    };
+  },
 );
 
 export const UserProfilePage = connect(mapStateToProps)(props => {
-  const { myUser, queriedUser, queriedUserRequest, urlParams, url } = props;
+  const { myUser, queriedUser, queriedUserRequest, url, isVerified } = props;
+  const { name: userName, karma, subredditName } = queriedUser;
   const isGildPage = GILD_URL_RE.test(url);
-  const { userName: queriedUserName } = urlParams;
-  const isMyUser = !!myUser && myUser.name === queriedUserName;
+  const isMyUser = !!myUser && myUser.name === userName;
+  const loaded = !!queriedUserRequest && !queriedUserRequest.loading;
 
   return (
     <div className='UserProfilePage'>
       <Section>
-        <UserProfileHeader userName={ queriedUserName } isMyUser={ isMyUser } />
+        { loaded && 
+          <UserProfileHeader
+            userName={ userName }
+            userSubreddit={ subredditName }
+            karma={ karma }
+            isMyUser={ isMyUser }
+            isVerified={ isVerified }
+          />
+        }
       </Section>
       { isGildPage ? <GildPageContent />
-        : queriedUser ? <UserProfileContent user={ queriedUser } isMyUser={ isMyUser } />
-        : !queriedUserRequest || queriedUserRequest.loading ? <Loading />
+        : queriedUser && loaded ? <UserProfileContent user={ queriedUser } isMyUser={ isMyUser } />
         : <Loading /> /* do an error state here? */ }
     </div>
   );

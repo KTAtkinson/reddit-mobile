@@ -11,6 +11,33 @@ import {
   loginRequiredEnabled as loginRequiredXPromoVariant,
 } from 'app/selectors/xpromo';
 
+const renderXPromoBanner = (children, isDisplay=false, mixin=false) => {
+  return isDisplay ? <DualPartInterstitial mixin={ mixin }>{ children }</DualPartInterstitial> : null;
+};
+
+const NavFrame = props => {
+  const { children, requireLogin, showXPromo } = props;
+  const xPromoBanner = renderXPromoBanner(children, showXPromo);
+  const xPromoForContentPadding = renderXPromoBanner(children, showXPromo, 'm-invisible');
+  const otherContent = requireLogin ? null : (
+    <div>
+      <TopNav />
+      <div className='NavFrame__below-top-nav'>
+        <EUCookieNotice />
+        { children }
+      </div>
+      { xPromoForContentPadding }
+    </div>
+  );
+
+  return (
+    <div className='NavFrame'>
+      { xPromoBanner }
+      { otherContent }
+    </div>
+  );
+};
+
 const xPromoSelector = createSelector(
   XPromoIsActive,
   loginRequiredXPromoVariant,
@@ -18,29 +45,5 @@ const xPromoSelector = createSelector(
     return { showXPromo, requireLogin};
   },
 );
-
-const NavFrame = props => {
-  const { children, requireLogin, showXPromo } = props;
-
-  let belowXPromo = null;
-  if (!requireLogin) {
-    belowXPromo = (
-      <div>
-        <TopNav />
-        <div className='NavFrame__below-top-nav'>
-          <EUCookieNotice />
-          { children }
-        </div>
-      </div>
-    );
-  } 
-
-  return (
-    <div className='NavFrame'>
-      { showXPromo ? (<DualPartInterstitial>{ children }</DualPartInterstitial>) : null }
-      { belowXPromo }
-    </div>
-  );
-};
 
 export default connect(xPromoSelector)(NavFrame);

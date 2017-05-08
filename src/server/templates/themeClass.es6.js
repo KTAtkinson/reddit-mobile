@@ -1,5 +1,7 @@
-import { themes } from '../../app/constants';
+import { COLOR_SCHEME } from '../../app/constants';
+
+const { DAYMODE } = COLOR_SCHEME;
 
 export const themeClass = (theme) => {
-  return theme === themes.DAYMODE ? 'dayMode' : 'nightMode';
+  return theme === DAYMODE ? 'dayMode' : 'nightMode';
 };

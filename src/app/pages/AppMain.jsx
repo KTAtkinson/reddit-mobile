@@ -21,6 +21,7 @@ import Login from 'app/components/Login';
 import Messages from 'app/components/Messages';
 import MessageThread from 'app/components/MessageThread';
 import ModalSwitch from 'app/components/ModalSwitch';
+import Place from 'app/components/Place';
 import PostSubmitCommunityModal from 'app/components/PostSubmitCommunityModal';
 import PostSubmitModal from 'app/components/PostSubmitModal';
 import Register from 'app/components/Register';
@@ -82,11 +83,7 @@ const AppMain = props => {
   if (statusCode !== 200) {
     return (
       <div className='AppMainPage'>
-        <NavFrame
-          showInterstitial={ false }
-          showDualPartInterstitial={ false }
-          showSmartBanner={ false }
-        >
+        <NavFrame>
           <ErrorPage status={ statusCode } url={ url } referrer={ referrer } />
         </NavFrame>
       </div>
@@ -103,8 +100,13 @@ const AppMain = props => {
         <Page url='/submit' component={ PostSubmitModal } />
         <Page url='/submit/to_community' component={ PostSubmitCommunityModal } />
         <FramedPage url='/' component={ PostsFromSubredditPage } />
-        <FramedPage url={ `/:sort(${SORTS})` } component={ PostsFromSubredditPage } />
+        <FramedPage url='/place' component={ Place } />
+        <FramedPage url='/r/:subredditName(place)' component={ Place } />
         <FramedPage url='/r/:subredditName' component={ PostsFromSubredditPage } />
+        <FramedPage
+          url={ `/r/:subredditName(place)/:sort(${SORTS})` }
+          component={ Place }
+        />
         <FramedPage
           url={ `/r/:subredditName/:sort(${SORTS})` }
           component={ PostsFromSubredditPage }
@@ -135,12 +137,21 @@ const AppMain = props => {
         <FramedPage url='/user/:userName/activity' component={ UserActivityPage } />
         <FramedPage url='/user/:userName/comments' component={ UserActivityPage } />
         <FramedPage url='/user/:userName/submitted' component={ UserActivityPage } />
+        <FramedPage url='/user/:userName' component={ UserActivityPage } />
         <FramedPage url='/user/:userName/gild' component={ UserProfilePage } />
         <FramedPage
           url='/user/:userName/:savedOrHidden(saved|hidden)'
           component={ SavedAndHiddenPage }
         />
-        <FramedPage url='/user/:userName/' component={ UserProfilePage } />
+        <FramedPage url='/user/:userName/about' component={ UserProfilePage } />
+        <FramedPage
+          url='/user/:userName/comments/:postId/:postTitle/:commentId'
+          component={ CommentsPage }
+        />
+        <FramedPage
+          url='/user/:userName/comments/:postId/:postTitle?'
+          component={ CommentsPage }
+        />
         <FramedPage url='/message/compose' component={ DirectMessage } />
         <FramedPage url='/message/:mailType' component={ Messages } />
       </UrlSwitch>

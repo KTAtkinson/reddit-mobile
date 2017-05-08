@@ -13,7 +13,7 @@ import * as sessionActions from 'app/actions/session';
 import * as xpromoActions from 'app/actions/xpromo';
 
 import goBackDest from 'lib/goBackDest';
-import { markBannerClosed } from 'lib/smartBannerState';
+import { markBannerClosed } from 'lib/xpromoState';
 
 import SnooIcon from 'app/components/SnooIcon';
 import LoginInput from 'app/components/LoginRegistrationForm/Input';
@@ -218,8 +218,11 @@ const mapDispatchToProps = dispatch => {
       // while the Promise dispatch is awaiting
       if (!preventExtraClick) {
         preventExtraClick = true;
-        await dispatch(xpromoActions.logAppStoreNavigation('login_screen_button'));
-        dispatch(xpromoActions.navigateToAppStore(url));
+        // We should not call `await` until the app-store navigation is in progress.
+        // see actions/xpromo.navigateToAppStore for more info.
+        const trackingPromise = dispatch(xpromoActions.logAppStoreNavigation('login_screen_button'));
+        xpromoActions.navigateToAppStore(url);
+        await trackingPromise;
         preventExtraClick = false;
       }
     }),

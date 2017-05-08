@@ -29,3 +29,26 @@
     @inNightMode();
   }
 }
+
+.themeifyXpromo(@common: {}, @minimal: {}, @persist: {}) {
+  & { @common(); }
+
+  &.xpromoMinimal,  
+   .xpromoMinimal & { 
+    @common();
+    @minimal();
+  }
+  &.xpromoPersist,
+   .xpromoPersist & {
+    @common();
+    @persist();
+  }
+
+  // MIXINS (for any theme)
+  &.m-invisible,
+   .m-invisible & {
+    position: relative;
+    visibility: hidden;
+    &.fadeOut{ display: none }
+  }
+}

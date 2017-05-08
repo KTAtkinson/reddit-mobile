@@ -2,18 +2,16 @@ import './styles.less';
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { createSelector } from 'reselect';
+import { createStructuredSelector } from 'reselect';
 import url from 'url';
 
 import { redirect } from 'platform/actions';
 import * as xpromoActions from 'app/actions/xpromo';
-import { XPROMO_DISMISS, xPromoExtraScreenViewData } from 'lib/eventUtils';
 import getSubreddit from 'lib/getSubredditFromState';
-import { getBranchLink } from 'lib/smartBannerState';
+import { XPROMO_DISPLAY_THEMES as THEME } from 'app/constants';
+import { getXPromoLinkforCurrentPage } from 'lib/xpromoState';
 import {
   loginRequiredEnabled as requireXPromoLogin,
-  isPartOfXPromoExperiment,
-  currentExperimentData,
 } from 'app/selectors/xpromo';
 
 const List = () => {
@@ -36,7 +34,6 @@ const List = () => {
 };
 
 class DualPartInterstitialFooter extends React.Component {
-
   componentDidMount() {
     const { dispatch, requireLogin } = this.props;
     if (requireLogin) {
@@ -49,8 +46,8 @@ class DualPartInterstitialFooter extends React.Component {
     if (requireLogin) {
       dispatch(redirect(this.loginLink()));
     } else {
-      dispatch(xpromoActions.trackXPromoEvent(XPROMO_DISMISS, { dismiss_type: 'link' }));
       dispatch(xpromoActions.close());
+      dispatch(xpromoActions.promoDismissed('link'));
     }
   }
 
@@ -71,6 +68,7 @@ class DualPartInterstitialFooter extends React.Component {
       nativeInterstitialLink,
       navigator,
       requireLogin,
+      xpromoTheme,
     } = this.props;
 
     let dismissal;
@@ -91,6 +89,7 @@ class DualPartInterstitialFooter extends React.Component {
 
     const pageName = subredditName ? `r/${ subredditName }` : 'Reddit';
     const subtitleText = `View ${ pageName } in the app because you deserve the best.`;
+    const buttonText = (xpromoTheme === THEME.PERSIST ? 'Open in app' : 'Continue');
 
     return (
       <div className='DualPartInterstitialFooter'>
@@ -99,10 +98,10 @@ class DualPartInterstitialFooter extends React.Component {
             { subtitleText }
           </div>
           <List />
-          <div className='DualPartInterstitialFooter__button'
+          <div className='DualPartInterstitialFooter__button' 
             onClick={ navigator(nativeInterstitialLink) }
           >
-            Continue
+            { buttonText }
           </div>
           <div className='DualPartInterstitialFooter__dismissal'>
             { dismissal }
@@ -113,49 +112,11 @@ class DualPartInterstitialFooter extends React.Component {
   }
 }
 
-function createNativeAppLink(state, linkType) {
-  let payload = { 
-    utm_source: 'xpromo', 
-    utm_content: linkType, 
-  };
-
-  if (isPartOfXPromoExperiment(state)) {
-    let experimentData = {};
-
-    if (currentExperimentData(state)) {
-      const { experiment_name, variant } = currentExperimentData(state);
-      experimentData = {
-        utm_name: experiment_name,
-        utm_term: variant,
-      };
-    }
-    payload = {
-      ...payload,
-      ...experimentData,
-      utm_medium: 'experiment',
-    };
-
-  } else {
-    payload = { ...payload, utm_medium: 'interstitial' };
-  }
-
-  payload = {
-    ...payload,
-    ...xPromoExtraScreenViewData(state),
-  };
-
-  return getBranchLink(state, payload);
-}
-
-const selector = createSelector(
-  getSubreddit,
-  requireXPromoLogin,
-  state => linkType => createNativeAppLink(state, linkType),
-  (subredditName, requireLogin, createLink) => {
-    const nativeInterstitialLink = createLink('interstitial');
-    const nativeLoginLink = createLink('login');
-    return { subredditName, requireLogin, nativeInterstitialLink, nativeLoginLink };
-  }
-);
+const selector = createStructuredSelector({
+  subredditName: getSubreddit,
+  requireLogin: requireXPromoLogin,
+  nativeInterstitialLink: state => getXPromoLinkforCurrentPage(state, 'interstitial'),
+  nativeLoginLink: state => getXPromoLinkforCurrentPage(state, 'login'),
+});
 
 export default connect(selector)(DualPartInterstitialFooter);

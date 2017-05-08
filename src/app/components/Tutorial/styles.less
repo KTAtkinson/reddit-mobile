@@ -1,0 +1,42 @@
+@import (reference) '~app/less/variables';
+@import (reference) '~app/less/themes/themeify';
+
+.Tutorial {
+  padding: 20px;
+
+  &__row {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+
+  &__rowImg {
+    max-width: 40%;
+    margin-right: 5px;
+  }
+
+  &__rowText {
+    padding: 12px;
+    font-size: large;
+
+    .themeify({
+      color: @theme-body-text-color;
+    });
+  }
+
+  &__button {
+    display: inline-block;
+    font-size: large;
+    font-weight: bold;
+    padding: 10px;
+    margin-top: 10px;
+    text-align: center;
+    text-transform: uppercase;
+    width: 100%;
+
+    .themeify({
+      color: @theme-button-text-color !important;
+      background-color: @theme-button-color;
+    });
+  }
+}

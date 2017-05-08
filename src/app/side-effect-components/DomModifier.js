@@ -1,7 +1,12 @@
 import { makeStateArchiver } from './StateArchiver';
 import { themeClass } from 'server/templates/themeClass';
-import { themes, OVERLAY_MENU_VISIBLE_CSS_CLASS } from 'app/constants';
 import { stopScroll } from 'lib/stopScroll';
+import {
+  COLOR_SCHEME,
+  OVERLAY_MENU_VISIBLE_CSS_CLASS,
+} from 'app/constants';
+
+const { DAYMODE, NIGHTMODE } = COLOR_SCHEME;
 
 const stopScrollForMenu = stopScroll(OVERLAY_MENU_VISIBLE_CSS_CLASS);
 
@@ -20,9 +25,9 @@ const combiner = (theme, overlayOpen, title) => ({ theme, overlayOpen, title });
 
 const updateTheme = ($body, newTheme) => {
   const nextThemeClass = themeClass(newTheme);
-  const oldThemeClass = themeClass(newTheme === themes.NIGHTMODE
-    ? themes.DAYMODE
-    : themes.NIGHTMODE
+  const oldThemeClass = themeClass(newTheme === NIGHTMODE
+    ? DAYMODE
+    : NIGHTMODE
   );
 
   $body.classList.remove(oldThemeClass);

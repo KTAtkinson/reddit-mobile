@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
+import { some } from 'lodash/collection';
 
 import CommunityHeader from 'app/components/CommunityHeader';
 import Loading from 'app/components/Loading';
@@ -8,11 +9,20 @@ import PostsList from 'app/components/PostsList';
 import NSFWInterstitial from 'app/components/NSFWInterstitial';
 import SortAndTimeSelector from 'app/components/SortAndTimeSelector';
 import SubNav from 'app/components/SubNav';
+import Tutorial from 'app/components/Tutorial';
+import XPromoListingClickModal from 'app/components/XPromoListingClickModal';
 
 import PostsFromSubredditHandler from 'app/router/handlers/PostsFromSubreddit';
 import { paramsToPostsListsId } from 'app/models/PostsList';
 
 import isFakeSubreddit from 'lib/isFakeSubreddit';
+
+import { flags } from 'app/constants';
+import features from 'app/featureFlags';
+const {
+  VARIANT_DEFAULT_SRS_TUTORIAL,
+  VARIANT_DEFAULT_SRS_POPULAR,
+} = flags;
 
 const mapStateToProps = createSelector(
   (_, props) => props, // props is the page props splatted.
@@ -20,7 +30,20 @@ const mapStateToProps = createSelector(
   state => state.subreddits,
   state => state.preferences,
   state => state.modal.id,
-  (pageProps, postsLists, subreddits, preferences, modalId) => {
+  (state, pageProps) => {
+    if (state.user.loading || state.user.loggedout || state.accounts[state.user.name] === undefined) {
+      return false;
+    }
+
+    const postsListParams = PostsFromSubredditHandler.pageParamsToSubredditPostsParams(pageProps);
+    const isFrontPage = !postsListParams.subredditName;
+    const feature = features.withContext({ state });
+    const tutorialEnabled = some([VARIANT_DEFAULT_SRS_TUTORIAL, VARIANT_DEFAULT_SRS_POPULAR], variant => feature.enabled(variant));
+    const hasSubscribed = state.accounts[state.user.name].hasSubscribed;
+
+    return isFrontPage && !hasSubscribed && tutorialEnabled;
+  },
+  (pageProps, postsLists, subreddits, preferences, modalId, shouldShowTutorial) => {
     const postsListParams = PostsFromSubredditHandler.pageParamsToSubredditPostsParams(pageProps);
     const postsListId = paramsToPostsListsId(postsListParams);
     const { subredditName } = postsListParams;
@@ -32,6 +55,7 @@ const mapStateToProps = createSelector(
       modalId,
       postsList: postsLists[postsListId],
       subreddit: subreddits[subredditName],
+      shouldShowTutorial,
     };
   },
 );
@@ -44,6 +68,7 @@ export const PostsFromSubredditPage = connect(mapStateToProps)(props => {
     subredditName,
     subreddit,
     preferences,
+    shouldShowTutorial,
   } = props;
 
   const showSubnav = !!postsList && !postsList.loading;
@@ -84,12 +109,15 @@ export const PostsFromSubredditPage = connect(mapStateToProps)(props => {
     <div className={ className }>
       { !forFakeSubreddit ? <CommunityHeader subredditName={ subredditName } /> : null }
       { showSubnav ? renderSubNav(subnavLink) : null }
-
-      <PostsList
-        postsListId={ postsListId }
-        subredditIsNSFW={ !!subreddit && subreddit.over18 }
-        subredditShowSpoilers={ !!subreddit && subreddit.spoilersEnabled }
-      />
+      { shouldShowTutorial
+        ? <Tutorial />
+        : <PostsList
+          postsListId={ postsListId }
+          subredditIsNSFW={ !!subreddit && subreddit.over18 }
+          subredditShowSpoilers={ !!subreddit && subreddit.spoilersEnabled }
+          />
+      }
+      <XPromoListingClickModal />
     </div>
   );
 });

@@ -1,0 +1,9 @@
+// Basic mixin for responsive squares.
+// Assumes that your element is box-sizing: border-box'd; mweb defaults
+// to the border box-model, so this should work unless you've specifically
+// overriden the box modal.
+
+.responsiveSquare(@size) {
+  width: @size;
+  padding-bottom: @size;
+}

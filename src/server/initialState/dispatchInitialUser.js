@@ -1,35 +1,58 @@
+import setCookieParser from 'set-cookie-parser';
+
 import * as userActions from 'app/actions/user';
 import * as loidActions from 'app/actions/loid';
 import { permanentRootCookieOptions } from './permanentRootCookieOptions';
 
 export const dispatchInitialUser = async (ctx, dispatch, getState) => {
   // the lack of camel casing on the 'loidcreated' cookie name is intentional.
-  const oldLoid = ctx.cookies.get('loid');
-  const oldLoidCreated = ctx.cookies.get('loidcreated');
+  const loidCookie = ctx.cookies.get('loid');
+  const loidCreatedCookie = ctx.cookies.get('loidcreated');
+  const edgeBucket = ctx.cookies.get('edgebucket');
 
-  // set the old loids into state. when we fetch the user, these might get
-  // passed along with the api call so the backend knows how to associate the
-  // logged out user with the logged in one.
-  dispatch(loidActions.setLOID(oldLoid, oldLoidCreated));
+  if (loidCookie && loidCookie.includes('.')) {
+    // If there's a `.`, we have the new format of loids,
+    // we ignore the loid created cookie and use whatever is in the loid payload
+    const [loid, /* version */, loidCreated] = loidCookie.split('.');
+    dispatch(loidActions.setLOID({
+      loid,
+      loidCookie,
+      loidCreated,
+      loidCreatedCookie,
+    }));
+  } else {
+    dispatch(loidActions.setLOID({
+      loid: loidCookie,
+      loidCookie,
+      loidCreated: loidCreatedCookie,
+      loidCreatedCookie,
+    }));
+  }
+
+  if (edgeBucket) {
+    dispatch(loidActions.setEdgeBucket({
+      edgeBucket,
+    }));
+  }
 
   // fetchMyUser pulls in the loid and loidCreated fields
   await dispatch(userActions.fetchMyUser());
-  const { loid: { loid, loidCreated } } = getState();
 
-  // there is a future in which the two of these are combined into one field,
-  // just called loid. so, we should check for the existence of loid and
-  // loidCreated independently, and set each cookie on its own.
+  const state = getState();
+
+  // First, ensure that the account request succeeded.
+  // If the request didn't succeed, we don't have any new information
+  // to update cookies with
+  if (!state.accountRequests.me || state.accountRequests.me.failed) {
+    return;
+  }
+
+  // If there were set-cookie headers on the account request, set them
   const options = permanentRootCookieOptions(ctx);
-
-  if (loid && (loid !== oldLoid)) {
-    ctx.cookies.set('loid', loid, options);
-  }
-
-  // oldLoidCreated is always an ISO string, since that's how it's stored in the
-  // cookie. loidCreated, however, is in ms since that's how we get it back from
-  // the api. so, to compare the two, we need to convert loidCreated to an
-  // ISO string.
-  if (loidCreated && ((new Date(loidCreated)).toISOString() !== oldLoidCreated)) {
-    ctx.cookies.set('loidcreated', new Date(loidCreated).toISOString(), options);
-  }
+  const { meta } = state.accountRequests.me;
+  const setCookieHeaders = (meta && meta['set-cookie']) || [];
+  setCookieHeaders.forEach(setCookieHeader => {
+    const { name, value } = setCookieParser.parse(setCookieHeader)[0];
+    ctx.cookies.set(name, value, options);
+  });
 };

@@ -1,14 +1,16 @@
 import * as themeActions from '../../app/actions/theme';
-import { themes } from '../../app/constants';
+import { COLOR_SCHEME } from '../../app/constants';
 import { DEFAULT } from '../../app/reducers/theme';
 import { permanentCookieOptions } from './permanentCookieOptions';
+
+const { DAYMODE, NIGHTMODE } = COLOR_SCHEME;
 
 export const dispatchInitialTheme = async (ctx, dispatch) => {
   const themeCookie = ctx.cookies.get('theme');
   const themeFromQuery = ctx.query.theme;
   let theme = themeFromQuery || themeCookie;
 
-  if (!(theme === themes.NIGHTMODE || theme === themes.DAYMODE)) {
+  if (!(theme === NIGHTMODE || theme === DAYMODE)) {
     theme = DEFAULT;
   }
 

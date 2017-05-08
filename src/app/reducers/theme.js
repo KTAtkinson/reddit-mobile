@@ -1,9 +1,9 @@
 import * as themeActions from 'app/actions/theme';
 import * as loginActions from 'app/actions/login';
 
-import { themes } from 'app/constants';
+import { COLOR_SCHEME } from 'app/constants';
 
-export const DEFAULT = themes.DAYMODE;
+export const DEFAULT = COLOR_SCHEME.DAYMODE;
 
 export default (state=DEFAULT, action={}) => {
   switch (action.type) {

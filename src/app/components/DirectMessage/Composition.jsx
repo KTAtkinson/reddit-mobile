@@ -26,12 +26,14 @@ export default function DirectMessageComposition(props) {
         className='DirectMessageComposition__input'
         name='subject'
         placeholder='Add an interesting title'
+        defaultValue={ props.subject }
       />
       <textarea
         className='DirectMessageComposition__textarea'
         name='body'
         rows='5'
         placeholder='Add a dank meme reference'
+        defaultValue={ props.message }
       />
       <button
         className='DirectMessageComposition__submit'

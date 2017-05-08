@@ -4,15 +4,40 @@
 @import (reference) '~app/less/mixins/modal';
 @import (reference) '~app/less/mixins/clearfix';
 
-
 .DualPartInterstitial {
   @logo-size: 80px;
   @wordmark-size: 36px;
   @rating-logo-size: 64px;
 
+  .themeifyXpromo(
+    @minimal: {
+      z-index: @z-index-xpromo;
+      position: fixed;
+      width: 100%;
+      bottom: 0;
+      .transition(bottom, 0.8s, 0, cubic-bezier(0.5, 0.1, 0.5, 1));
+      &.fadeOut { bottom: -100%; }
+      &__common,
+      &__content{ height: auto; }
+    },
+    @persist: {
+      z-index: @z-index-xpromo;
+      position: fixed;
+      width: 100%;
+      bottom: 0;
+      opacity: 0;
+      .transition(all, 0.4s, 0, cubic-bezier(0.5, 0.1, 0.5, 1));
+      &.fadeOut { bottom: -30%; }
+      &.visiblePersist { opacity: 1; }
+      &__common,
+      &__content{ height: auto; }
+    }
+  );
+
   &__content {
     width: 100%;
     height: 100vh;
+    overflow: hidden;
   }
 
   &__common {
@@ -75,34 +100,4 @@
 .DualPartInterstitial + .TopNav + .BelowTopNav {
   margin-top: 0;
   position: relative;
-}
-
-// minimal theme 
-.DualPartInterstitial.m-minimal {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  z-index: @z-index-menu;
-  opacity: 1;
-  .transition(all, 0.5s);
-
-  &.fadeOut { opacity: 0; }
-
-  .DualPartInterstitial {
-    &__content{
-      height: 0vh;
-    }
-    &Header{
-      display: none;
-    }
-    &Footer{
-      background-color: #222;
-      &__subtitle{
-        color: #fff;
-      }
-      &__bulletList{
-        display: none;
-      }
-    }
-  }
 }

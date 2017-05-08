@@ -7,6 +7,8 @@ import mobilify from 'lib/mobilify';
 import { getStatusBy, getApprovalStatus, sumReportsCount } from 'lib/modToolHelpers.js';
 import PostModel from 'apiClient/models/PostModel';
 
+import { LISTING_CLICK_TYPES } from 'app/constants';
+
 import {
   isPostNSFW,
   cleanPostDomain,
@@ -96,7 +98,7 @@ function isValidKeyColorForRendering(keyColor) {
   return keyColor !== '#efefed' && keyColor !== '#222222';
 }
 
-function subredditLabelIfNeeded(sr_detail, subreddit, hideSubredditLabel) {
+function subredditLabelIfNeeded(sr_detail, subreddit, hideSubredditLabel, interceptListingClick) {
   if (hideSubredditLabel || !subreddit) { return; }
 
   const keyColorStyle = {};
@@ -107,15 +109,19 @@ function subredditLabelIfNeeded(sr_detail, subreddit, hideSubredditLabel) {
     }
   }
 
-  const rSubreddit = `r/${subreddit}`;
+  const profilePost = sr_detail && (sr_detail.subreddit_type === 'user');
+  const url = sr_detail ? sr_detail.url : `/r/${subreddit}`;
+  const displayLabel = sr_detail ? sr_detail.display_name_prefixed : `r/${subreddit}`;
 
   return (
     <Anchor
       className='PostHeader__subreddit-link'
-      href={ `/${rSubreddit}` }
+      href={ url }
       style={ keyColorStyle }
+      onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.SUBREDDIT) }
     >
-      { rSubreddit }
+      { displayLabel }
+      { profilePost && <span className="icon icon-verified lime" /> }
     </Anchor>
   );
 }
@@ -132,14 +138,21 @@ function renderLinkFlairText(post) {
   );
 }
 
-function renderAuthorAndTimeStamp(post, single, hideWhen, className) {
+function renderAuthorAndTimeStamp(post, interceptListingClick, single, hideWhen, className) {
   const {
     author,
     createdUTC,
+    subredditDetail,
   } = post;
 
-  const authorLink = (
-    <Anchor className={ `PostHeader__author-link ${className}` } href={ `/user/${author}` }>
+  const profilePost = subredditDetail && (subredditDetail.subreddit_type === 'user');
+
+  const authorLink = profilePost ? null : (
+    <Anchor
+      className={ `PostHeader__author-link ${className}` }
+      href={ `/user/${author}` }
+      onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.AUTHOR) }
+    >
       { `u/${author}` }
     </Anchor>
   );
@@ -148,6 +161,14 @@ function renderAuthorAndTimeStamp(post, single, hideWhen, className) {
     return authorLink;
   }
 
+  if (profilePost) {
+    return (
+      <span>
+        { short(createdUTC) }
+      </span>
+    );
+  }
+  
   if (single) {
     return (
       <span>
@@ -233,7 +254,11 @@ function renderModStatusFlair(post, reports) {
   );
 }
 
-function renderPromotedUserPostDescriptor({ author, promotedUrl, promotedDisplayName }) {
+function renderPromotedUserPostDescriptor({
+    author,
+    promotedUrl,
+    promotedDisplayName,
+  }, interceptListingClick) {
   const displayAuthor = promotedDisplayName || author;
   const urlProps = {
     className: 'PostHeader__promoted-user-post-line',
@@ -243,6 +268,7 @@ function renderPromotedUserPostDescriptor({ author, promotedUrl, promotedDisplay
       PROMOTED_FLAIR,
       <span className='blue'>{ ` by ${displayAuthor}` }</span>,
     ],
+    onClick: e => interceptListingClick(e, LISTING_CLICK_TYPES.AUTHOR),
   };
 
   // no promoted url
@@ -259,6 +285,7 @@ function renderPromotedUserPostDescriptor({ author, promotedUrl, promotedDisplay
 
 function renderPostDescriptor(
   post,
+  interceptListingClick,
   single,
   renderMediaFullbleed,
   hideSubredditLabel,
@@ -267,21 +294,24 @@ function renderPostDescriptor(
   reports,
 ) {
   const {
-    sr_detail,
+    subredditDetail,
     subreddit,
   } = post;
 
   const postFlairOrNil = renderPostFlair(post, single);
-  const subredditLabelOrNil = subredditLabelIfNeeded(sr_detail, subreddit,
-    hideSubredditLabel);
+  const subredditLabelOrNil = subredditLabelIfNeeded(subredditDetail, subreddit,
+    hideSubredditLabel, interceptListingClick);
 
   let authorOrNil;
   if (!single) {
-    authorOrNil = renderAuthorAndTimeStamp(post, single, hideWhen);
+    authorOrNil = renderAuthorAndTimeStamp(post, interceptListingClick, single, hideWhen);
   }
 
   const flairOrNil = renderLinkFlairText(post);
-  const promotedUserPostDescriptor = isPromotedUserPost && renderPromotedUserPostDescriptor(post);
+  const promotedUserPostDescriptor = isPromotedUserPost && renderPromotedUserPostDescriptor(
+    post,
+    interceptListingClick
+  );
   const normalPostDescriptor = renderWithSeparators([
     hideSubredditLabel && flairOrNil,
     postFlairOrNil,
@@ -328,12 +358,13 @@ function renderWithSeparators(nullableThings) {
   return separatedThings;
 }
 
-function renderPostDomain(post) {
+function renderPostDomain(post, interceptListingClick) {
   return (
     <OutboundLink
       className='PostHeader__author-link'
       href={ mobilify(post.cleanUrl) }
       outboundLink={ post.outboundLink }
+      onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.DOMAIN) }
     >
       { cleanPostDomain(post.domain) }
     </OutboundLink>
@@ -349,13 +380,13 @@ function renderDetailViewSubline(post, hideWhen) {
   return (
     <div className='PostHeader__post-descriptor-line'>
       <div className='PostHeader__post-descriptor-line-overflow'>
-        { renderAuthorAndTimeStamp(post, true, hideWhen, distinguishingCssClass) }
+        { renderAuthorAndTimeStamp(post, () => null, true, hideWhen, distinguishingCssClass) }
       </div>
     </div>
   );
 }
 
-function renderPostHeaderLink(post, showLinksInNewTab) {
+function renderPostHeaderLink(post, interceptListingClick, showLinksInNewTab) {
   const href = cleanPostHREF(mobilify(post.cleanUrl));
 
   if (!href) {
@@ -370,6 +401,7 @@ function renderPostHeaderLink(post, showLinksInNewTab) {
       href={ href }
       target={ target }
       outboundLink={ post.outboundLink }
+      onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.TITLE) }
     >
       { cleanPostDomain(post.domain) }
       <span className='PostHeader__post-link-icon icon icon-linkout blue' />
@@ -377,8 +409,14 @@ function renderPostHeaderLink(post, showLinksInNewTab) {
   );
 }
 
-function renderPostTitleLink(post, showLinksInNewTab, onElementClick,
-                             titleOpensExpando, onTapExpand) {
+function renderPostTitleLink(
+  post,
+  interceptListingClick,
+  showLinksInNewTab,
+  onElementClick,
+  titleOpensExpando,
+  onTapExpand,
+) {
   const linkExternally = post.promoted && !post.isSelf;
   const url = linkExternally ? post.cleanUrl : cleanPostHREF(mobilify(post.cleanPermalink));
   const { title } = post;
@@ -404,6 +442,10 @@ function renderPostTitleLink(post, showLinksInNewTab, onElementClick,
   const anchorProps = {
     ...props,
     onClick: e => {
+      if (interceptListingClick(e, LISTING_CLICK_TYPES.TITLE)) {
+        return;
+      }
+
       if (titleOpensExpando) {
         e.preventDefault();
         const clickTarget = 'title';
@@ -429,6 +471,7 @@ export default function PostHeader(props) {
     compact,
     hideSubredditLabel,
     hideWhen,
+    interceptListingClick,
     nextToThumbnail,
     showingLink,
     renderMediaFullbleed,
@@ -465,6 +508,7 @@ export default function PostHeader(props) {
       {
         renderPostDescriptor(
           post,
+          interceptListingClick,
           single,
           renderMediaFullbleed,
           hideSubredditLabel,
@@ -473,10 +517,13 @@ export default function PostHeader(props) {
           reports,
         )
       }
-      { renderPostTitleLink(post, showLinksInNewTab, onElementClick,
-                            titleOpensExpando, onTapExpand) }
-      { showSourceLink ? renderPostHeaderLink(post, showLinksInNewTab) : null }
-      { single && !isPromotedUserPost ? renderDetailViewSubline(post, hideWhen) : null }
+      { renderPostTitleLink(post, interceptListingClick, showLinksInNewTab,
+                           onElementClick, titleOpensExpando, onTapExpand) }
+      { showSourceLink
+        ? renderPostHeaderLink(post, interceptListingClick, showLinksInNewTab)
+        : null }
+      { single && !isPromotedUserPost
+        ? renderDetailViewSubline(post, interceptListingClick, hideWhen) : null }
     </header>
   );
 }

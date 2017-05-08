@@ -1,9 +1,16 @@
 import merge from 'platform/merge';
 import * as accountActions from 'app/actions/accounts';
-import { newAccountRequest } from 'app/models/AccountRequest';
 import * as loginActions from 'app/actions/login';
 
 const DEFAULT = {};
+
+const newAccountRequest = name => ({
+  id: name,
+  loading: true,
+  failed: false,
+  error: null,
+  meta: null,
+});
 
 export default function (state=DEFAULT, action={}) {
   switch (action.type) {
@@ -23,19 +30,24 @@ export default function (state=DEFAULT, action={}) {
     }
 
     case accountActions.RECEIVED_ACCOUNT: {
-      const { name } = action;
-      const request = state[name];
-      if (!request) {
-        return merge(state, {
-          [name]: {
-            ...newAccountRequest(name),
-            loading: false,
-          },
-        });
-      }
+      const { name, apiResponse: { meta } } = action;
+      return merge(state, {
+        [name]: {
+          meta: meta || null,
+          loading: false,
+        },
+      });
+    }
+
+    case accountActions.FAILED: {
+      const { error, options: { name } } = action;
 
       return merge(state, {
-        [name]: { loading: false },
+        [name]: {
+          error,
+          loading: false,
+          failed: true,
+        },
       });
     }
 

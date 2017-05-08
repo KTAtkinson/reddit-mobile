@@ -1,5 +1,5 @@
-import { themes } from 'app/constants';
-const { NIGHTMODE, DAYMODE } = themes;
+import { COLOR_SCHEME } from 'app/constants';
+const { NIGHTMODE, DAYMODE } = COLOR_SCHEME;
 
 export const SET_THEME = 'SET_THEME';
 

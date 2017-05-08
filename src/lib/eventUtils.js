@@ -1,16 +1,19 @@
+import find from 'lodash/find';
 import omit from 'lodash/omit';
 import values from 'lodash/values';
 import url from 'url';
 
 import {
-  interstitialType,
-  isPartOfXPromoExperiment,
-  currentExperimentData as currentXPromoExperimentData,
-  xpromoIsEnabledOnDevice,
+  getXPromoExperimentPayload,
   commentsInterstitialEnabled,
   isEligibleListingPage,
   isEligibleCommentsPage,
+  isXPromoBannerEnabled,
+  isXPromoEnabledOnPages,
 } from 'app/selectors/xpromo';
+
+import getSessionIdFromCookie from 'lib/getSessionIdFromCookie';
+import { interstitialData } from 'lib/xpromoState';
 
 import {
   buildAdditionalEventData as listingPageEventData,
@@ -23,7 +26,7 @@ import isFakeSubreddit from 'lib/isFakeSubreddit';
 import { getEventTracker } from 'lib/eventTracker';
 import * as gtm from 'lib/gtm';
 import { hasAdblock } from 'lib/adblock';
-import { shouldNotShowBanner } from 'lib/smartBannerState';
+import { shouldNotShowBanner } from 'lib/xpromoState';
 
 export const XPROMO_VIEW = 'cs.xpromo_view';
 export const XPROMO_INELIGIBLE = 'cs.xpromo_ineligible';
@@ -63,6 +66,33 @@ export function buildSubredditData(state) {
   };
 }
 
+export function buildProfileData(state, extraPayload) {
+  const { userName: name } = state.platform.currentPage.urlParams;
+
+  // if a user doesn't exist, this check will catch it. We may want to track
+  // this in the future.
+  if (!name) {
+    return null;
+  }
+
+  const user = find(state.accounts, (_, k) => k.toLowerCase() === name.toLowerCase());
+
+  // another thing to track in the future -- if the user somehow isn't in our state
+  if (!user) {
+    return null;
+  }
+
+
+  return {
+    target_name: user.name,
+    target_fullname: `t2_${user.id}`,
+    target_type: 'account',
+    target_id: convertId(user.id),
+    is_contributor: !!state.subreddits[`u_${user.uuid}`],
+    ...extraPayload,
+  };
+}
+
 export function getListingName(state) {
   const urlName = state.platform.currentPage.urlParams.subredditName;
   const subreddit = getSubredditFromState(state);
@@ -74,10 +104,10 @@ export function getListingName(state) {
 export function getUserInfoOrLoid(state) {
   const user = state.user;
   const userInfo = state.accounts[user.name];
-  if (!user.loggedOut) {
+  if (userInfo && !user.loggedOut) {
     return {
       'user_id': convertId(userInfo.id),
-      'user_name': user.name,
+      'user_name': userInfo.name,
     };
   }
 
@@ -109,6 +139,7 @@ export function getBasePayload(state) {
     dnt: !!window.DO_NOT_TRACK,
     compact_view: compact,
     adblock: hasAdblock(),
+    session_id: getSessionIdFromCookie(),
     ...getUserInfoOrLoid(state),
   };
 
@@ -141,8 +172,12 @@ export function trackXPromoEvent(state, eventType, additionalEventData) {
   const payload = {
     ...getBasePayload(state),
     ...buildSubredditData(state),
-    ...getExperimentPayload(state),
+    ...getXPromoExperimentPayload(state),
     ...xPromoExtraScreenViewData(state),
+    // We should append the interstitialData, if this is not an XPROMO_INELIGIBLE
+    // event. In that case, we might not bucketed the user, so we should
+    // avoid trigger those events.
+    ...(eventType === XPROMO_INELIGIBLE ? {} : interstitialData(state)),
     ...additionalEventData,
   };
 
@@ -154,20 +189,9 @@ export function trackXPromoEvent(state, eventType, additionalEventData) {
   });
 }
 
-function getExperimentPayload(state) {
-  let experimentPayload = {};
-  if (isPartOfXPromoExperiment(state) && currentXPromoExperimentData(state)) {
-    const { experiment_name, variant } = currentXPromoExperimentData(state);
-    experimentPayload = { experiment_name, experiment_variant: variant };
-  }
-  return experimentPayload;
-}
-
-
 export function trackXPromoView(state, additionalEventData) {
   trackXPromoEvent(state, XPROMO_VIEW, {
     ...additionalEventData,
-    interstitial_type: interstitialType(state),
   });
 }
 
@@ -178,25 +202,21 @@ export function trackXPromoIneligibleEvent(state, additionalEventData, ineligibi
   });
 }
 
-export function trackPagesXPromoEvents(state, additionalEventData) {
-  if (isEligibleListingPage(state)) {
-    const ineligibilityReason = shouldNotShowBanner();
-    if (ineligibilityReason) {
-      trackXPromoIneligibleEvent(state, additionalEventData, ineligibilityReason);
-    } else if (xpromoIsEnabledOnDevice(state)) {
-      // listing pages always track view events because they'll either see
-      // the normal xpromo, or the login required variant
-      trackXPromoView(state, additionalEventData);
-    }
-  } else if (isEligibleCommentsPage(state)) {
-    const ineligibilityReason = shouldNotShowBanner();
-    if (ineligibilityReason) {
-      trackXPromoIneligibleEvent(state, additionalEventData, ineligibilityReason);
-      // otherwise check if this is a valid page, and the comments page
-      // xpromo is enabled.
-    } else if (xpromoIsEnabledOnDevice(state) && commentsInterstitialEnabled(state)) {
-      trackXPromoView(state, additionalEventData);
-    }
+function trackPagesXPromoEvents(state, additionalEventData) {
+  // Before triggering any of these xPromo events, we need
+  // be sure that the first and main XPROMOBANNER is enabled
+  // on these: PAGE / DEVICE / NSFW / SUBREDDIT
+  if (!isXPromoBannerEnabled(state)) {
+    return false;
+  }
+  const ineligibilityReason = shouldNotShowBanner(state);
+
+  if (ineligibilityReason && isXPromoEnabledOnPages(state)) {
+    return trackXPromoIneligibleEvent(state, additionalEventData, ineligibilityReason);
+  } else if (isEligibleListingPage(state) || commentsInterstitialEnabled(state)) {
+    // listing pages always track view events because they'll
+    // either see the normal xpromo, or the login required variant
+    return trackXPromoView(state, additionalEventData);
   }
 }
 

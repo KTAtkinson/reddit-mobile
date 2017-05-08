@@ -14,41 +14,58 @@ import { paramsToActiviesRequestId } from 'app/models/ActivitiesRequest';
 
 const mapStateToProps = createSelector(
   userAccountSelector,
+  (state, props) => state.accounts[props.urlParams.userName.toLowerCase()],
+  (state, props) => state.accountRequests[props.urlParams.userName],
   state => state.activitiesRequests,
   (_, props) => props, // props is the page props splatted,
-  (myUser, activities, pageProps) => {
+  (myUser, queriedUser, queriedUserRequest, activities, pageProps) => {
     const activitiesParams = UserActivityHandler.pageParamsToActivitiesParams(pageProps);
     const activitiesId = paramsToActiviesRequestId(activitiesParams);
+    const isVerified = queriedUser && queriedUser.verified;
 
     return {
       myUser,
-      queriedUserName: pageProps.urlParams.userName,
+      queriedUser: queriedUser || {},
+      queriedUserRequest,
       activitiesId,
-      currentActivity: pageProps.queryParams.activity,
+      currentActivity: activitiesParams.activity,
+      isVerified,
     };
   },
 );
 
 export const UserActivityPage = connect(mapStateToProps)(props => {
-  const { myUser, queriedUserName, activitiesId, currentActivity } = props;
-  const isMyUser = !!myUser && myUser.name === queriedUserName;
+  const {
+    myUser,
+    queriedUser,
+    queriedUserRequest,
+    activitiesId,
+    currentActivity,
+    isVerified,
+  } = props;
+  const { name: userName, karma, subredditName } = queriedUser;
+  const isMyUser = !!myUser && myUser.name === userName;
+  const loaded = !!queriedUserRequest && !queriedUserRequest.loading;
 
   return (
     <div className='UserProfilePage'>
       <Section>
-        <UserProfileHeader
-          userName={ queriedUserName }
-          isMyUser={ isMyUser }
-          currentActivity={ currentActivity }
-        />
+        { loaded && 
+          <UserProfileHeader
+            userName={ userName }
+            userSubreddit={ subredditName }
+            karma={ karma }
+            isMyUser={ isMyUser }
+            currentActivity={ currentActivity }
+            isVerified={ isVerified }
+          />
+        }
       </Section>
-      <SortAndTimeSelector className='UserProfilePage__sorts' />
+      { loaded && <SortAndTimeSelector className='UserProfilePage__sorts' /> }
       <PostAndCommentList
         requestLocation='activitiesRequests'
         requestId={ activitiesId }
-        thingProps={ {
-          userActivityPage: true,
-        } }
+        thingProps={ {userActivityPage: true} }
       />
     </div>
   );

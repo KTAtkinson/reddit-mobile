@@ -3,10 +3,10 @@ import './styles.less';
 import React from 'react';
 import map from 'lodash/map';
 
-
 import { Anchor, Form } from 'platform/components';
-import { themes } from 'app/constants';
-const { NIGHTMODE } = themes;
+import { COLOR_SCHEME } from 'app/constants';
+
+const { NIGHTMODE } = COLOR_SCHEME;
 
 const T = React.PropTypes;
 

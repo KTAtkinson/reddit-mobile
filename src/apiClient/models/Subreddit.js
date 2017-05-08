@@ -58,6 +58,7 @@ export default class Subreddit extends RedditModel {
     description: T.string,
     descriptionHTML: T.string,
     displayName: T.string,
+    displayNamePrefixed: T.string,
     headerImage: T.string,
     headerSize: T.arrayOf(T.number),
     headerTitle: T.string,
@@ -102,6 +103,7 @@ export default class Subreddit extends RedditModel {
     created_utc: 'createdUTC',
     description_html: 'descriptionHTML',
     display_name: 'displayName',
+    display_name_prefixed: 'displayNamePrefixed',
     header_img: 'headerImage',
     header_size: 'headerSize',
     header_title: 'headerTitle',
@@ -136,9 +138,20 @@ export default class Subreddit extends RedditModel {
   // a permalink url with the subredddit name or someone types in a subreddit name
   // in the goto field we can look-up the subreddit in our cache without converting
   // the name to a thing_id.
+  // We use a special type of subreddit to handle profile posts, and as an
+  // interim measure, we want to handle permalinks that include the display
+  // name for those subreddits (u_profilename). We can safely use the
+  // display_name field for that mapping of URL -> state ID for vanilla
+  // subreddits and for profile post subreddits.
   makeUUID(data) {
-    const { url } = data;
-    return Subreddit.cleanName(url);
+    // We may pass this an already formed model which will have "displayName"
+    // instead of "display_name". So if we already have a uuid, just use that.
+    if (data.uuid) {
+      return data.uuid;
+    }
+
+    const { display_name } = data;
+    return Subreddit.cleanName(display_name);
   }
 
   makePaginationId(data) {

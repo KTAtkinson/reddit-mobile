@@ -190,6 +190,10 @@
       .icon-font({
         font-size: @half-icon-size;
         line-height: @icon-size; // vertical alignment
+        // without an explicit display type, the icon will be aligned to
+        // the text baseline; ensures consistent vertical alignment across
+        // mobile browsers (looking at you firefox).
+        display: inline-block;
       });
     }
 
